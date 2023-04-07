@@ -21,15 +21,15 @@ class Predator:
 
         # life variables
         self.detect_radius = 5
-        self.max_seconds = 75
+        self.max_seconds = 175
 
         self.seconds_to_live = self.max_seconds
         self.kills_to_reproduce = 1
 
         self.brain = torch.nn.Sequential(
-            torch.nn.Linear(16, 32),
+            torch.nn.Linear(48, 256),
             torch.nn.ReLU(),
-            torch.nn.Linear(32, 9)
+            torch.nn.Linear(256, 9)
         )
 
     def get_input(self, game_board):
@@ -56,7 +56,25 @@ class Predator:
                     scan[i] = [value, distance]
                     break
         return scan.reshape(-1)
-        
+
+    def get_input2(self, game_board):
+        # simulate entity sight
+        x, y = self.x, self.y
+        x_start, x_end = max(0, x-3), min(game_board.shape[0], x+4)
+        y_start, y_end = max(0, y-3), min(game_board.shape[1], y+4)
+        scan = np.full((48), -1)
+
+        # search surrounding area
+        for i, x_idx in enumerate(range(x_start, x_end)):
+            for j, y_idx in enumerate(range(y_start, y_end)):
+                if (x_idx, y_idx) != (self.x, self.y):  # Exclude the origin point
+                    value = game_board[x_idx, y_idx]
+                    if value == 0:
+                        scan[(i*7 + j)-1] = 0
+                    elif value == 1:
+                        scan[(i*7 + j)-1] = 1
+
+        return scan
 
     def move(self, direction, game_board):
         dx, dy = direction
@@ -76,6 +94,9 @@ class Predator:
         # Check if moving into another
         if simulation.check_occupied(game_board, new_x, new_y, True):
             new_x, new_y = self.x, self.y
+
+        if (new_x == self.x and new_y == self.y) == False:
+            self.seconds_to_live -= 0.1
         
         # move agent
         self.x, self.y = new_x, new_y
@@ -141,7 +162,7 @@ class Predator:
             predators.remove(self)
 
         # Get brain inputs
-        perception = self.get_input(game_board)
+        perception = self.get_input2(game_board)
 
         # convert outputs into movement direction
         output = self.brain(torch.tensor(perception, dtype=torch.float32))

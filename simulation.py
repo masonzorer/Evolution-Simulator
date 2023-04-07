@@ -7,13 +7,13 @@ import prey
 import predator
 
 init_predators = 100
-init_prey = 100
+init_prey = 150
 
-max_predators = 300
-max_prey = 500
+max_predators = 200
+max_prey = 250
 
-grid_size = 225
-scaling_factor = 4
+grid_size = 150
+scaling_factor = 6
 
 PREY = []
 PREDATORS = []
@@ -95,10 +95,9 @@ def main():
 
         win.blit(pygame.transform.scale(screen, win.get_rect().size), (0, 0))
         pygame.display.update()
-        clock.tick(60)
+        clock.tick(100)
 
         print(f'predators: {len(PREDATORS)}, prey: {len(PREY)}')
-        time.sleep(.02)
         
 
 if __name__ == "__main__":

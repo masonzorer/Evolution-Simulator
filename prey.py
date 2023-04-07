@@ -21,20 +21,20 @@ class Prey:
 
         # life variables
         self.detect_radius = 5
-        self.max_seconds = 50
+        self.max_seconds = 75
 
         self.max_energy = 25
         self.current_energy = self.max_energy
         self.cooldown = False
-        self.max_cooldown = 5
+        self.max_cooldown = 10
         self.current_cooldown = self.max_cooldown
 
         self.seconds_to_reproduce = self.max_seconds
 
         self.brain = torch.nn.Sequential(
-            torch.nn.Linear(16, 32),
+            torch.nn.Linear(48, 128),
             torch.nn.ReLU(),
-            torch.nn.Linear(32, 9)
+            torch.nn.Linear(128, 9)
         )
 
     def get_input(self, game_board):
@@ -61,6 +61,25 @@ class Prey:
                     scan[i] = [value, distance]
                     break
         return scan.reshape(-1)
+
+    def get_input2(self, game_board):
+        # simulate entity sight
+        x, y = self.x, self.y
+        x_start, x_end = max(0, x-3), min(game_board.shape[0], x+4)
+        y_start, y_end = max(0, y-3), min(game_board.shape[1], y+4)
+        scan = np.full((48), -1)
+
+        # search surrounding area
+        for i, x_idx in enumerate(range(x_start, x_end)):
+            for j, y_idx in enumerate(range(y_start, y_end)):
+                if (x_idx, y_idx) != (self.x, self.y):  # Exclude the origin point
+                    value = game_board[x_idx, y_idx]
+                    if value == 0:
+                        scan[(i*7 + j)-1] = 0
+                    elif value == 1:
+                        scan[(i*7 + j)-1] = 1
+
+        return scan
 
     def move(self, direction, game_board):
         dx, dy = direction
@@ -127,7 +146,7 @@ class Prey:
                 self.reproduce(prey, game_board)
 
         # Get brain inputs
-        perception = self.get_input(game_board)
+        perception = self.get_input2(game_board)
 
         # convert outputs into movement direction
         output = self.brain(torch.tensor(perception, dtype=torch.float32))
